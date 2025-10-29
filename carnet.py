@@ -1,8 +1,8 @@
-from pgmpy.models import BayesianNetwork
+from pgmpy.models import DiscreteBayesianNetwork
 from pgmpy.inference import VariableElimination
 from pgmpy.factors.discrete import TabularCPD
 
-car_model = BayesianNetwork(
+car_model = DiscreteBayesianNetwork(
     [
         ("Battery", "Radio"),
         ("Battery", "Ignition"),
@@ -66,6 +66,67 @@ car_model.add_cpds( cpd_starts, cpd_ignition, cpd_gas, cpd_radio, cpd_battery, c
 
 car_infer = VariableElimination(car_model)
 
-print(car_infer.query(variables=["Moves"],evidence={"Radio":"turns on", "Starts":"yes"}))
+def main():
+    q1 = car_infer.query(variables=["Battery"], evidence={"Moves": "no"})
+    print("1. P(Battery | Moves = no):")
+    print(q1)
+
+    q2 = car_infer.query(variables=["Starts"], evidence={"Radio": "Doesn't turn on"})
+    print("\n2. P(Starts | Radio = Doesn't turn on):")
+    print(q2)
+
+    q3a = car_infer.query(variables=["Radio"], evidence={"Battery": "Works"})
+    q3b = car_infer.query(variables=["Radio"], evidence={"Battery": "Works", "Gas": "Full"})
+    print("\n3a. P(Radio | Battery=works):")
+    print(q3a)
+    print("3b. P(Radio | Battery=works, Gas=Full)")
+    print(q3b)
+
+    q4a = car_infer.query(variables=["Ignition"], evidence={"Moves": "no"})
+    q4b = car_infer.query(variables=["Ignition"], evidence={"Moves": "no", "Gas": "Empty"})
+    print("\n4a. P(Ignition | Moves=no)")
+    print(q4a)
+    print("4b. P(Ignition | Moves=no, Gas=Empty)")
+    print(q4b)
+
+    q5 = car_infer.query(variables=["Starts"], evidence={"Radio": "turns on", "Gas": "Full"})
+    print("\n5. P(Starts | Radio works, Gas Full)")
+    print(q5)
+
+if __name__ == "__main__":
+    main()
+
+#print(car_infer.query(variables=["Moves"],evidence={"Radio":"turns on", "Starts":"yes"}))
 
 
+#update for keypresent
+car_model.remove_cpds(cpd_starts)
+
+car_model.add_node("KeyPresent")
+car_model.add_edge("KeyPresent", "Starts")
+
+cpd_keypresent = TabularCPD(
+    variable="KeyPresent", variable_card=2,
+    values=[[0.7], [0.3]],
+    state_names={"KeyPresent": ["yes", "no"]}
+)
+
+#update stats and add
+cpd_starts = TabularCPD(
+    variable="Starts",
+    variable_card=2,
+    values=[[0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01], 
+            [0.01, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99]],
+    evidence=["Gas", "Ignition", "KeyPresent"],
+    evidence_card=[2, 2, 2],
+    state_names={"Starts":['yes','no'], "Ignition":["Works", "Doesn't work"], "Gas":['Full',"Empty"], "KeyPresent":["yes", "no"]},
+)
+
+
+car_model.add_cpds(cpd_keypresent, cpd_starts)
+
+car_infer = VariableElimination(car_model)
+
+q = car_infer.query(variables=["KeyPresent"], evidence={"Moves":"no"})
+print("\nP(KeyPresent | Moves=no):")
+print(q)

@@ -1,7 +1,7 @@
-from pgmpy.models import BayesianNetwork
+from pgmpy.models import DiscreteBayesianNetwork
 from pgmpy.inference import VariableElimination
 
-alarm_model = BayesianNetwork(
+alarm_model = DiscreteBayesianNetwork(
     [
         ("Burglary", "Alarm"),
         ("Earthquake", "Alarm"),
@@ -55,6 +55,21 @@ alarm_infer = VariableElimination(alarm_model)
 #print(alarm_infer.query(variables=["JohnCalls"],evidence={"Earthquake":"yes"}))
 #
 #the probability of Mary Calling given that John called
+def main():
+    q1 = alarm_infer.query(variables=["MaryCalls"], evidence={"JohnCalls": "yes"})
+    print("1. P(MaryCalls | JohnCalls = yes):")
+    print(q1)
 
-q = alarm_infer.query(variables=["Alarm", "Burglary"],evidence={"MaryCalls":"yes"})
-print(q)
+    q2 = alarm_infer.query(variables=["JohnCalls", "MaryCalls"], evidence={"Alarm": "yes"})
+    print("\n2. P(JohnCalls, MaryCalls | Alarm = yes):")
+    print(q2)
+
+    q3 = alarm_infer.query(variables=["Alarm"], evidence={"MaryCalls": "yes"})
+    print("\n3. P(Alarm | MaryCalls = yes):")
+    print(q3)
+
+if __name__ == "__main__":
+    main()        
+
+#q = alarm_infer.query(variables=["Alarm", "Burglary"],evidence={"MaryCalls":"yes"})
+#print(q)
